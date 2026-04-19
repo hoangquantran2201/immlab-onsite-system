@@ -85,8 +85,7 @@ current_weekday = now.weekday()
 st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>TRANG THÔNG TIN ĐĂNG KÝ LỊCH CÓ MẶT TẠI LAB</h2>", unsafe_allow_html=True)
 
 # --- PHẦN 1: KHU VỰC ĐĂNG KÝ (CẦN ĐĂNG NHẬP) ---
-st.header("1. Cập nhật lịch có mặt")
-
+st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>1. Cập nhật lịch có mặt</h2>", unsafe_allow_html=True)
 if st.session_state.logged_in_name is None:
     st.warning("🔒 Vui lòng đăng nhập bằng Gmail để có thể đăng ký lịch.")
     with st.expander("Bấm vào đây để ĐĂNG NHẬP", expanded=True):
@@ -155,8 +154,7 @@ else:
 st.markdown("---")
 
 # --- PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI) ---
-st.header("2. Danh sách Onsite Agenda")
-
+st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>2. Danh sách Onsite Agenda</h2>", unsafe_allow_html=True)
 if not df_current.empty:
     display_df = df_current.copy()
 
