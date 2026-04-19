@@ -115,7 +115,7 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    if current_weekday == 6:
+    if current_weekday == 0:
         st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
@@ -153,32 +153,32 @@ else:
 
 st.markdown("---")
 
-# --- PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI) ---
-st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>2. Danh sách Onsite Agenda</h2>", unsafe_allow_html=True)
-if not df_current.empty:
-    display_df = df_current.copy()
+# # --- PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI) ---
+# st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>2. Danh sách Onsite Agenda</h2>", unsafe_allow_html=True)
+# if not df_current.empty:
+#     display_df = df_current.copy()
 
-    # Logic ẩn dữ liệu cũ sau 22h Chủ Nhật
-    if current_weekday == 6 and now.hour >= 22:
-        next_monday = now + timedelta(days=1)
-        next_sunday = now + timedelta(days=7)
-        week_next_str = f"{next_monday.strftime('%d/%m')} - {next_sunday.strftime('%d/%m')}"
-        display_df = display_df[display_df["Tuần đăng ký"] == week_next_str]
-        st.info(f"💡 Đã sau 22h Chủ Nhật: Chỉ hiển thị lịch tuần sau ({week_next_str}).")
+#     # Logic ẩn dữ liệu cũ sau 22h Chủ Nhật
+#     if current_weekday == 6 and now.hour >= 22:
+#         next_monday = now + timedelta(days=1)
+#         next_sunday = now + timedelta(days=7)
+#         week_next_str = f"{next_monday.strftime('%d/%m')} - {next_sunday.strftime('%d/%m')}"
+#         display_df = display_df[display_df["Tuần đăng ký"] == week_next_str]
+#         st.info(f"💡 Đã sau 22h Chủ Nhật: Chỉ hiển thị lịch tuần sau ({week_next_str}).")
 
-    search_term = st.text_input("🔍 Tìm kiếm nhanh theo tên thành viên:")
-    if search_term:
-        mask = display_df[DAYS].apply(lambda x: x.astype(str).str.contains(search_term, case=False, na=False)).any(axis=1)
-        display_df = display_df[mask]
+#     search_term = st.text_input("🔍 Tìm kiếm nhanh theo tên thành viên:")
+#     if search_term:
+#         mask = display_df[DAYS].apply(lambda x: x.astype(str).str.contains(search_term, case=False, na=False)).any(axis=1)
+#         display_df = display_df[mask]
 
-    st.table(display_df.set_index("Dấu thời gian"))
+#     st.table(display_df.set_index("Dấu thời gian"))
     
-    st.subheader("Thống kê số lượng người có mặt")
-    counts = {day: sum((display_df[day] != "") & (display_df[day].notna())) for day in DAYS}
-    st.table(pd.DataFrame([counts], index=["Số người"]))
+#     st.subheader("Thống kê số lượng người có mặt")
+#     counts = {day: sum((display_df[day] != "") & (display_df[day].notna())) for day in DAYS}
+#     st.table(pd.DataFrame([counts], index=["Số người"]))
 
     # --- KHU VỰC ADMIN ---
-    if st.session_state.is_admin:
+if st.session_state.is_admin:
         st.markdown("---")
         st.subheader("⚙️ Khu vực Quản Trị Viên")
         st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
@@ -191,5 +191,5 @@ if not df_current.empty:
             st.cache_data.clear()
             st.rerun()
 
-else:
-    st.info("Chưa có dữ liệu đăng ký")
+# else:
+#     st.info("Chưa có dữ liệu đăng ký")
