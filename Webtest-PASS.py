@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from streamlit_gsheets import GSheetsConnection
 
-st.set_page_config(layout="wide", page_title="Đăng Ký Lịch Lab")
+st.set_page_config(layout="wide", page_title="IMMLAB ONSITE AGENDA")
 
 # --- CSS ÉP BẢNG CĂN GIỮA ---
 st.markdown("""
@@ -17,44 +18,45 @@ st.markdown("""
 # CƠ SỞ DỮ LIỆU & KHỞI TẠO BỘ NHỚ
 # ==========================================
 USER_DB = {
-    "hoangquantran2201@gmail.com":      {"name": "Hoàng Quân",      "password": "123"},
-    "ttdmy1206@gmail.com":              {"name": "Diễm My",         "password": "123"},
-    "thanhhoangtt7@gmail.com":          {"name": "Thanh Hoàng",     "password": "123"},
-    "ngvkhang123@gmail.com":            {"name": "Vĩnh Khang",      "password": "123"},
-    "baotranhuynh0523@gmail.com":       {"name": "Bảo Trân",        "password": "123"},
-    "anhtai0125@gmail.com":             {"name": "Anh Tài",         "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-    "":          {"name": "",     "password": "123"},
-
-    "admin@immlab.com":                 {"name": "Admin",           "password": "admin"} 
+    "quan@gmail.com": {"name": "Hoàng Quân", "password": "123"},
+    "my@gmail.com": {"name": "Diễm My", "password": "123"},
+    "hoang@gmail.com": {"name": "Thanh Hoàng", "password": "123"},
+    "admin@immlab.com": {"name": "Admin", "password": "admin"} 
 }
 
 DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"]
-
-if 'lab_data' not in st.session_state:
-    st.session_state.lab_data = pd.DataFrame(columns=["Dấu thời gian", "Tuần đăng ký"] + DAYS)
 
 if "logged_in_name" not in st.session_state:
     st.session_state.logged_in_name = None
     st.session_state.is_admin = False
 
-# Thời gian hệ thống chung
+# ==========================================
+# KẾT NỐI GOOGLE SHEETS
+# ==========================================
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+def get_data_from_sheets():
+    try:
+        # Lấy dữ liệu mới nhất từ tab "IMMLAB ONSITE AGENDA"
+        return conn.read(worksheet="IMMLAB ONSITE AGENDA", ttl=0)
+    except Exception as e:
+        # Nếu chưa có dữ liệu hoặc lỗi, trả về bảng trống
+        return pd.DataFrame(columns=["Dấu thời gian", "Tuần đăng ký"] + DAYS)
+
+# Lấy dữ liệu thực tế từ Cloud
+df_current = get_data_from_sheets()
+
+# ==========================================
+# GIAO DIỆN CHÍNH
+# ==========================================
 now = datetime.now()
 current_weekday = now.weekday() 
 
 st.title("TRANG THÔNG TIN ĐĂNG KÝ LỊCH CÓ MẶT TẠI LAB")
 
-# ==========================================
-# PHẦN 1: KHU VỰC ĐĂNG KÝ (CẦN ĐĂNG NHẬP)
-# ==========================================
-st.header("1. CẬP NHẬT LỊCH CÓ MẶT")
+# --- PHẦN 1: KHU VỰC ĐĂNG KÝ (CẦN ĐĂNG NHẬP) ---
+st.header("1. Cập nhật lịch có mặt")
 
-# TRƯỜNG HỢP CHƯA ĐĂNG NHẬP -> Hiện form đăng nhập
 if st.session_state.logged_in_name is None:
     st.warning("🔒 Vui lòng đăng nhập bằng Gmail để có thể đăng ký lịch.")
     with st.expander("Bấm vào đây để ĐĂNG NHẬP", expanded=True):
@@ -74,7 +76,6 @@ if st.session_state.logged_in_name is None:
             else:
                 st.error("Sai tài khoản hoặc mật khẩu!")
 
-# TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP -> Hiện form chọn ngày
 else:
     col_info, col_logout = st.columns([4, 1])
     with col_info:
@@ -85,12 +86,11 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    # Kiểm tra điều kiện mở form (Chỉ Chủ Nhật)
     if current_weekday == 6:
-        st.info("Hệ thống đang mở: Mời bạn đăng ký lịch Lab cho tuần tiếp theo.")
+        st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
-            st.write("Đánh dấu vào các ngày bạn sẽ có mặt tại Lab tuần tới:")
+            st.write("Đánh dấu vào các ngày bạn sẽ có mặt tại Lab:")
             
             cols = st.columns(7)
             selected_days = {}
@@ -110,22 +110,25 @@ else:
                     new_row = {"Dấu thời gian": timestamp, "Tuần đăng ký": week_str}
                     for day in DAYS:
                         new_row[day] = current_user if selected_days[day] else ""
-                        
-                    st.session_state.lab_data = pd.concat([st.session_state.lab_data, pd.DataFrame([new_row])], ignore_index=True)
-                    st.success("Đã ghi nhận lịch tuần tới của bạn thành công!")
+                    
+                    # Cập nhật thẳng lên Google Sheets
+                    new_entry = pd.DataFrame([new_row])
+                    updated_df = pd.concat([df_current, new_entry], ignore_index=True)
+                    conn.update(worksheet="IMMLAB ONSITE AGENDA", data=updated_df)
+                    
+                    st.success("Đã ghi nhận thành công!")
+                    st.cache_data.clear() # Xóa cache để bảng tải lại
                     st.rerun()
     else:
-        st.warning("Cổng đăng ký lịch Lab hiện đang ĐÓNG. Bạn chỉ có thể đăng ký vào Chủ Nhật hàng tuần.")
+        st.warning("Cổng đăng ký hiện đang ĐÓNG. Bạn chỉ có thể đăng ký vào Chủ Nhật hàng tuần.")
 
 st.markdown("---")
 
-# ==========================================
-# PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI CHO TẤT CẢ MỌI NGƯỜI)
-# ==========================================
+# --- PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI) ---
 st.header("2. Danh sách Onsite Agenda")
 
-if not st.session_state.lab_data.empty:
-    display_df = st.session_state.lab_data.copy()
+if not df_current.empty:
+    display_df = df_current.copy()
 
     # Logic ẩn dữ liệu cũ sau 22h Chủ Nhật
     if current_weekday == 6 and now.hour >= 22:
@@ -135,33 +138,30 @@ if not st.session_state.lab_data.empty:
         display_df = display_df[display_df["Tuần đăng ký"] == week_next_str]
         st.info(f"💡 Đã sau 22h Chủ Nhật: Chỉ hiển thị lịch tuần sau ({week_next_str}).")
 
-    # Bộ lọc tìm kiếm
     search_term = st.text_input("🔍 Tìm kiếm nhanh theo tên thành viên:")
     if search_term:
-        mask = display_df[DAYS].apply(lambda x: x.str.contains(search_term, case=False, na=False)).any(axis=1)
+        mask = display_df[DAYS].apply(lambda x: x.astype(str).str.contains(search_term, case=False, na=False)).any(axis=1)
         display_df = display_df[mask]
 
-    # Hiển thị bảng công khai
     st.table(display_df.set_index("Dấu thời gian"))
     
     st.subheader("Thống kê số lượng người có mặt")
     counts = {day: sum((display_df[day] != "") & (display_df[day].notna())) for day in DAYS}
     st.table(pd.DataFrame([counts], index=["Số người"]))
 
-    # ==========================================
-    # PHẦN 3: KHU VỰC ADMIN (CHỈ HIỆN KHI ADMIN ĐĂNG NHẬP)
-    # ==========================================
+    # --- KHU VỰC ADMIN ---
     if st.session_state.is_admin:
         st.markdown("---")
         st.subheader("⚙️ Khu vực Quản Trị Viên")
-        st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây hoặc chọn dòng và bấm 'Delete' để xóa.")
+        st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
         
-        edited_df = st.data_editor(st.session_state.lab_data, num_rows="dynamic", use_container_width=True, hide_index=True)
+        edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
         
-        if st.button("💾 Lưu thay đổi hệ thống"):
-            st.session_state.lab_data = edited_df
+        if st.button("💾 Lưu thay đổi lên Google Sheets"):
+            conn.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
             st.success("Đã cập nhật hệ thống!")
+            st.cache_data.clear()
             st.rerun()
 
 else:
-    st.info("Chưa có dữ liệu đăng ký.")
+    st.info("Chưa có dữ liệu đăng ký")
