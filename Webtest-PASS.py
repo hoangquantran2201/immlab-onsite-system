@@ -10,7 +10,10 @@ st.markdown("""
     <style>
     [data-testid="stTable"] table { width: 100% !important; table-layout: fixed !important; }
     [data-testid="stTable"] th, [data-testid="stTable"] td { text-align: center !important; vertical-align: middle !important; word-wrap: break-word !important; }
-    [data-testid="stTable"] th { background-color: #1E2530; }
+    [data-testid="stTable"] th { 
+        background-color: #1E2530 !important; 
+        color: #FFFFFF !important; /* Dòng này ép chữ tiêu đề luôn có màu trắng */
+    }
     </style>
 """, unsafe_allow_html=True)
 
