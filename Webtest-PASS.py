@@ -82,7 +82,7 @@ df_current = get_data_from_sheets()
 now = datetime.now()
 current_weekday = now.weekday() 
 
-st.title("TRANG THÔNG TIN ĐĂNG KÝ LỊCH CÓ MẶT TẠI LAB")
+st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>TRANG THÔNG TIN ĐĂNG KÝ LỊCH CÓ MẶT TẠI LAB</h2>", unsafe_allow_html=True)
 
 # --- PHẦN 1: KHU VỰC ĐĂNG KÝ (CẦN ĐĂNG NHẬP) ---
 st.header("1. Cập nhật lịch có mặt")
