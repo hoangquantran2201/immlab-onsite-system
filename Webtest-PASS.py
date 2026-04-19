@@ -21,10 +21,37 @@ st.markdown("""
 # CƠ SỞ DỮ LIỆU & KHỞI TẠO BỘ NHỚ
 # ==========================================
 USER_DB = {
-    "quan@gmail.com": {"name": "Hoàng Quân", "password": "123"},
-    "my@gmail.com": {"name": "Diễm My", "password": "123"},
-    "hoang@gmail.com": {"name": "Thanh Hoàng", "password": "123"},
-    "admin@immlab.com": {"name": "Admin", "password": "admin"} 
+    "hoangquantran2201@gmail.com":      {"name": "Hoàng Quân",  "password": "immlab"},
+    "ngvkhang123@gmail.com":            {"name": "Vĩnh Khang",  "password": "immlab"},
+    "nttdmy1206@gmail.com":             {"name": "Diễm My",     "password": "immlab"},
+    "baotranhuynh0523@gmail.com":       {"name": "Bảo Trân",    "password": "immlab"},
+    "thanhhoangtt7@gmail.com":          {"name": "Thanh hoàng", "password": "immlab"},
+    "phamaivy092@gmail.com":            {"name": "Ái Vy",       "password": "immlab"},
+    "lthabh923@gmail.com":              {"name": "Hữu Phát",    "password": "immlab"},
+    "nhimaidung987@gmail.com":          {"name": "Dung Nhi",    "password": "immlab"},
+    "myanhphan.22092004@gmail.com":     {"name": "Mỹ Anh",      "password": "immlab"},
+    "anhtai0125@gmail.com":             {"name": "Anh Tài",     "password": "immlab"},
+    "phanngoc.huong0101@gmail.com":     {"name": "Ngọc Hương",  "password": "immlab"},
+    "datnguyenn113@gmail.com":          {"name": "Thành Đạt",   "password": "immlab"},
+    "tacocubing2231@gmail.com":         {"name": "Nguyên Khôi", "password": "immlab"},
+    "byhoangtho@gmail.com":             {"name": "Hoàng Thơ",   "password": "immlab"},
+    "boytruong70@gmail.com":            {"name": "Hoài Nguyên", "password": "immlab"},
+    "phn759931@gmail.com":              {"name": "Thanh Phong", "password": "immlab"},
+    "hangoct19@gmail.com":              {"name": "Gia Hưng",    "password": "immlab"},
+    "nguyenhuudang2510@gmail.com":      {"name": "Hữu Đăng",    "password": "immlab"},
+    "nguyenquocbinh290506@gmail.com":   {"name": "Quốc Bình",   "password": "immlab"},
+    "thuyvy.y30i@gmail.com":            {"name": "Thúy Vy",     "password": "immlab"},
+    "minhkhang180707@gmail.com":        {"name": "Minh Khang",  "password": "immlab"},
+    "anhhthao273@gmail.com":            {"name": "Ánh Thảo",    "password": "immlab"},
+    "tuongvinguyen.nttv2007@gmail.com": {"name": "Tường Vi",    "password": "immlab"},
+    "nc.uyenvy@gmail.com":              {"name": "Uyên Vy",     "password": "immlab"},
+    "nguyenhoangminhcan@gmail.com":     {"name": "Minh Can",    "password": "immlab"},
+    "truongquocquan9a5@gmail.com":      {"name": "Quốc Quân",   "password": "immlab"},
+    "phuockhangchu2345@gmail.com":      {"name": "Phước Khang", "password": "immlab"},
+    "tamynhi2007@gmail.com":            {"name": "Mỹ Nhi",      "password": "immlab"},
+    "tranhoanganhthu.anhthu@gmail.com": {"name": "Anh Thư",     "password": "immlab"},
+
+    "admin@immlab.com": {"name": "Staff", "password": "immlabstaff"} 
 }
 
 DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"]
