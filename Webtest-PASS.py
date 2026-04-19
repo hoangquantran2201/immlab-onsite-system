@@ -17,10 +17,21 @@ st.markdown("""
 # CƠ SỞ DỮ LIỆU & KHỞI TẠO BỘ NHỚ
 # ==========================================
 USER_DB = {
-    "quan@gmail.com": {"name": "Hoàng Quân", "password": "123"},
-    "my@gmail.com": {"name": "Diễm My", "password": "123"},
-    "hoang@gmail.com": {"name": "Thanh Hoàng", "password": "123"},
-    "admin@immlab.com": {"name": "Admin", "password": "admin"} 
+    "hoangquantran2201@gmail.com":      {"name": "Hoàng Quân",      "password": "123"},
+    "ttdmy1206@gmail.com":              {"name": "Diễm My",         "password": "123"},
+    "thanhhoangtt7@gmail.com":          {"name": "Thanh Hoàng",     "password": "123"},
+    "ngvkhang123@gmail.com":            {"name": "Vĩnh Khang",      "password": "123"},
+    "baotranhuynh0523@gmail.com":       {"name": "Bảo Trân",        "password": "123"},
+    "anhtai0125@gmail.com":             {"name": "Anh Tài",         "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+    "":          {"name": "",     "password": "123"},
+
+    "admin@immlab.com":                 {"name": "Admin",           "password": "admin"} 
 }
 
 DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"]
