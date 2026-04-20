@@ -1,7 +1,10 @@
-import streamlit as st
-import pandas as pd
-from datetime import datetime, timedelta
-from streamlit_gsheets import GSheetsConnection
+import  streamlit as st
+import  pandas    as pd
+from    datetime  import datetime, timedelta
+from    streamlit_gsheets import GSheetsConnection
+import  random
+import  smtplib
+from    email.mime.text import MIMEText
 
 st.set_page_config(layout="wide", page_title="IMMLAB ONSITE AGENDA")
 
@@ -12,48 +15,14 @@ st.markdown("""
     [data-testid="stTable"] th, [data-testid="stTable"] td { text-align: center !important; vertical-align: middle !important; word-wrap: break-word !important; }
     [data-testid="stTable"] th { 
         background-color: #1E2530 !important; 
-        color: #FFFFFF !important; /* Dòng này ép chữ tiêu đề luôn có màu trắng */
+        color: #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# CƠ SỞ DỮ LIỆU & KHỞI TẠO BỘ NHỚ
+# KHỞI TẠO BỘ NHỚ
 # ==========================================
-USER_DB = {
-    "hoangquantran2201@gmail.com":      {"name": "Hoàng Quân",  "password": "immlab"},
-    "ngvkhang123@gmail.com":            {"name": "Vĩnh Khang",  "password": "immlab"},
-    "nttdmy1206@gmail.com":             {"name": "Diễm My",     "password": "immlab"},
-    "baotranhuynh0523@gmail.com":       {"name": "Bảo Trân",    "password": "immlab"},
-    "thanhhoangtt7@gmail.com":          {"name": "Thanh hoàng", "password": "immlab"},
-    "phamaivy092@gmail.com":            {"name": "Ái Vy",       "password": "immlab"},
-    "lthabh923@gmail.com":              {"name": "Hữu Phát",    "password": "immlab"},
-    "nhimaidung987@gmail.com":          {"name": "Dung Nhi",    "password": "immlab"},
-    "myanhphan.22092004@gmail.com":     {"name": "Mỹ Anh",      "password": "immlab"},
-    "anhtai0125@gmail.com":             {"name": "Anh Tài",     "password": "immlab"},
-    "phanngoc.huong0101@gmail.com":     {"name": "Ngọc Hương",  "password": "immlab"},
-    "datnguyenn113@gmail.com":          {"name": "Thành Đạt",   "password": "immlab"},
-    "tacocubing2231@gmail.com":         {"name": "Nguyên Khôi", "password": "immlab"},
-    "byhoangtho@gmail.com":             {"name": "Hoàng Thơ",   "password": "immlab"},
-    "boytruong70@gmail.com":            {"name": "Hoài Nguyên", "password": "immlab"},
-    "phn759931@gmail.com":              {"name": "Thanh Phong", "password": "immlab"},
-    "hangoct19@gmail.com":              {"name": "Gia Hưng",    "password": "immlab"},
-    "nguyenhuudang2510@gmail.com":      {"name": "Hữu Đăng",    "password": "immlab"},
-    "nguyenquocbinh290506@gmail.com":   {"name": "Quốc Bình",   "password": "immlab"},
-    "thuyvy.y30i@gmail.com":            {"name": "Thúy Vy",     "password": "immlab"},
-    "minhkhang180707@gmail.com":        {"name": "Minh Khang",  "password": "immlab"},
-    "anhhthao273@gmail.com":            {"name": "Ánh Thảo",    "password": "immlab"},
-    "tuongvinguyen.nttv2007@gmail.com": {"name": "Tường Vi",    "password": "immlab"},
-    "nc.uyenvy@gmail.com":              {"name": "Uyên Vy",     "password": "immlab"},
-    "nguyenhoangminhcan@gmail.com":     {"name": "Minh Can",    "password": "immlab"},
-    "truongquocquan9a5@gmail.com":      {"name": "Quốc Quân",   "password": "immlab"},
-    "phuockhangchu2345@gmail.com":      {"name": "Phước Khang", "password": "immlab"},
-    "tamynhi2007@gmail.com":            {"name": "Mỹ Nhi",      "password": "immlab"},
-    "tranhoanganhthu.anhthu@gmail.com": {"name": "Anh Thư",     "password": "immlab"},
-
-    "admin@immlab.com": {"name": "Staff", "password": "immlabstaff"} 
-}
-
 DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"]
 
 if "logged_in_name" not in st.session_state:
@@ -65,16 +34,31 @@ if "logged_in_name" not in st.session_state:
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-def get_data_from_sheets():
+@st.cache_data(ttl=0)
+def get_data_from_sheets(sheet_name):
     try:
-        # Lấy dữ liệu mới nhất từ tab "IMMLAB ONSITE AGENDA"
-        return conn.read(worksheet="IMMLAB ONSITE AGENDA", ttl=0)
+        return conn.read(worksheet=sheet_name, ttl=0)
     except Exception as e:
-        # Nếu chưa có dữ liệu hoặc lỗi, trả về bảng trống
-        return pd.DataFrame(columns=["Dấu thời gian", "Tuần đăng ký"] + DAYS)
+        return pd.DataFrame()
 
-# Lấy dữ liệu thực tế từ Cloud
-df_current = get_data_from_sheets()
+df_current = get_data_from_sheets("IMMLAB ONSITE AGENDA")
+df_accounts = get_data_from_sheets("ACCOUNTS")
+
+# ==========================================
+# HÀM GỬI EMAIL TỰ ĐỘNG
+# ==========================================
+def send_email(receiver_email, password):
+    sender_email = "immlab2026@gmail.com" 
+    app_password = "ejprixwusrbinrmf" 
+    
+    msg = MIMEText(f"Chào bạn,\n\nMật khẩu đăng nhập hệ thống Onsite Lab của bạn là: {password}\n\nVui lòng sử dụng mật khẩu này để đăng nhập và không chia sẻ cho người khác.\n\nTrân trọng,\nIMMLAB Admin.")
+    msg['Subject'] = 'Mật khẩu truy cập hệ thống Onsite Lab'
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        server.login(sender_email, app_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
 
 # ==========================================
 # GIAO DIỆN CHÍNH
@@ -96,14 +80,27 @@ if st.session_state.logged_in_name is None:
             pass_input = st.text_input("Mật khẩu:", type="password")
         
         if st.button("Đăng nhập"):
-            if email_input in USER_DB and USER_DB[email_input]["password"] == pass_input:
-                st.session_state.logged_in_name = USER_DB[email_input]["name"]
-                if email_input == "admin@immlab.com":
-                    st.session_state.is_admin = True
-                st.success("Đăng nhập thành công!")
+            # Kiểm tra Admin (Ghi cứng để đảm bảo Sếp luôn vào được)
+            if email_input == "admin@immlab.com" and pass_input == "immlabstaff":
+                st.session_state.logged_in_name = "Staff"
+                st.session_state.is_admin = True
+                st.success("Đăng nhập Admin thành công!")
                 st.rerun()
             else:
-                st.error("Sai tài khoản hoặc mật khẩu!")
+                # Kiểm tra thành viên thường dựa trên tab Accounts
+                if not df_accounts.empty:
+                    # Lọc tìm người dùng
+                    user_match = df_accounts[(df_accounts['Email'] == email_input) & (df_accounts['Password'].astype(str) == pass_input)]
+                    
+                    if not user_match.empty:
+                        st.session_state.logged_in_name = user_match.iloc[0]['Name']
+                        st.session_state.is_admin = False
+                        st.success("Đăng nhập thành công!")
+                        st.rerun()
+                    else:
+                        st.error("Sai tài khoản hoặc mật khẩu! Vui lòng kiểm tra lại email chứa 5 số mã PIN.")
+                else:
+                    st.error("Hệ thống chưa tải được dữ liệu tài khoản.")
 
 else:
     col_info, col_logout = st.columns([4, 1])
@@ -115,7 +112,7 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    if current_weekday == 0:
+    if current_weekday == 0: # 0 là thứ 2. Tùy lab mở ngày nào thì đổi số đó
         st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
@@ -140,56 +137,71 @@ else:
                     for day in DAYS:
                         new_row[day] = current_user if selected_days[day] else ""
                     
-                    # Cập nhật thẳng lên Google Sheets
                     new_entry = pd.DataFrame([new_row])
                     updated_df = pd.concat([df_current, new_entry], ignore_index=True)
                     conn.update(worksheet="IMMLAB ONSITE AGENDA", data=updated_df)
                     
                     st.success("Đã ghi nhận thành công!")
-                    st.cache_data.clear() # Xóa cache để bảng tải lại
+                    st.cache_data.clear() 
                     st.rerun()
     else:
         st.warning("Cổng đăng ký hiện đang ĐÓNG. Bạn chỉ có thể đăng ký vào Chủ Nhật hàng tuần.")
 
 st.markdown("---")
 
-# # --- PHẦN 2: DANH SÁCH ONSITE (CÔNG KHAI) ---
-# st.markdown("<h2 style='font-size: 26px; padding-bottom: 10px;'>2. Danh sách Onsite Agenda</h2>", unsafe_allow_html=True)
-# if not df_current.empty:
-#     display_df = df_current.copy()
-
-#     # Logic ẩn dữ liệu cũ sau 22h Chủ Nhật
-#     if current_weekday == 6 and now.hour >= 22:
-#         next_monday = now + timedelta(days=1)
-#         next_sunday = now + timedelta(days=7)
-#         week_next_str = f"{next_monday.strftime('%d/%m')} - {next_sunday.strftime('%d/%m')}"
-#         display_df = display_df[display_df["Tuần đăng ký"] == week_next_str]
-#         st.info(f"💡 Đã sau 22h Chủ Nhật: Chỉ hiển thị lịch tuần sau ({week_next_str}).")
-
-#     search_term = st.text_input("🔍 Tìm kiếm nhanh theo tên thành viên:")
-#     if search_term:
-#         mask = display_df[DAYS].apply(lambda x: x.astype(str).str.contains(search_term, case=False, na=False)).any(axis=1)
-#         display_df = display_df[mask]
-
-#     st.table(display_df.set_index("Dấu thời gian"))
-    
-#     st.subheader("Thống kê số lượng người có mặt")
-#     counts = {day: sum((display_df[day] != "") & (display_df[day].notna())) for day in DAYS}
-#     st.table(pd.DataFrame([counts], index=["Số người"]))
-
-    # --- KHU VỰC ADMIN ---
+# ==========================================
+# KHU VỰC QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
+# ==========================================
 if st.session_state.is_admin:
-        st.markdown("---")
-        st.subheader("⚙️ Khu vực Quản Trị Viên")
+    st.subheader("⚙️ Khu vực Quản Trị Viên")
+    
+    # Chia tab cho gọn gàng
+    tab1, tab2 = st.tabs(["Quản lý Lịch Onsite", "Cấp Pass & Gửi Mail"])
+    
+    # TAB 1: Sửa lịch
+    with tab1:
         st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
+        if not df_current.empty:
+            edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
+            if st.button("💾 Lưu thay đổi Lịch"):
+                conn.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
+                st.success("Đã cập nhật hệ thống!")
+                st.cache_data.clear()
+                st.rerun()
+        else:
+            st.write("Chưa có dữ liệu lịch.")
+            
+    # TAB 2: Cấp tài khoản
+    with tab2:
+        st.info("💡 Bấm nút dưới đây để tạo mã PIN 5 số và gửi qua Email cho những thành viên CHƯA CÓ mật khẩu trong Google Sheets.")
         
-        edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
+        if st.button("Bắt đầu Quét & Gửi Mail", type="primary"):
+            with st.spinner("Đang xử lý và gửi mail... (Vui lòng không tắt trang)"):
+                updates_made = False
+                df_acc_updated = df_accounts.copy()
+                
+                for index, row in df_acc_updated.iterrows():
+                    # Chỉ gửi cho người chưa có Pass
+                    if pd.isna(row['Password']) or str(row['Password']).strip() == "":
+                        random_pass = str(random.randint(10000, 99999))
+                        try:
+                            send_email(row['Email'], random_pass)
+                            df_acc_updated.at[index, 'Password'] = random_pass
+                            df_acc_updated.at[index, 'Status'] = "Đã gửi mail"
+                            updates_made = True
+                            st.write(f"✅ Đã gửi pass thành công cho: {row['Email']}")
+                        except Exception as e:
+                            st.error(f"❌ Lỗi khi gửi cho {row['Email']}: Kiểm tra lại App Password hoặc Email nhận.")
+                            
+                if updates_made:
+                    # Ghi đè mật khẩu mới lên tab Accounts
+                    conn.update(worksheet="ACCOUNTS", data=df_acc_updated)
+                    st.success("Hoàn tất cấp tài khoản và đồng bộ lên Google Sheets!")
+                    st.cache_data.clear()
+                else:
+                    st.warning("Tất cả thành viên đều đã có mật khẩu. Không có email nào được gửi thêm.")
         
-        if st.button("💾 Lưu thay đổi lên Google Sheets"):
-            conn.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
-            st.success("Đã cập nhật hệ thống!")
-            st.cache_data.clear()
-            st.rerun()
-
-# else:
-#     st.info("Chưa có dữ liệu đăng ký")
+        st.markdown("---")
+        st.write("Bảng theo dõi trạng thái tài khoản (Đồng bộ từ Tab Accounts):")
+        if not df_accounts.empty:
+            st.dataframe(df_accounts, use_container_width=True, hide_index=True)
