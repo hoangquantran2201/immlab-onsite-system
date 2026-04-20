@@ -48,8 +48,8 @@ def send_email(receiver_email, password):
     sender_email = "immlab2026@gmail.com" 
     app_password = "ejprixwusrbinrmf" 
     
-    msg = MIMEText(f"Chào bạn,\n\nMật khẩu đăng nhập hệ thống Onsite Lab của bạn là: {password}\n\nVui lòng sử dụng mật khẩu này để đăng nhập và không chia sẻ cho người khác.\n\nTrân trọng,\nIMMLAB Admin.")
-    msg['Subject'] = 'Mật khẩu truy cập hệ thống Onsite Lab'
+    msg = MIMEText(f"Chào bạn,\n\nMật khẩu đăng nhập hệ thống IMMLab Attendance Booking của bạn là: {password}\n\nVui lòng sử dụng mật khẩu này để đăng nhập và không chia sẻ cho người khác.\n\nTrân trọng,\nIMMLAB Admin.")
+    msg['Subject'] = 'Mật khẩu truy cập hệ thống IMMLab Attendance Booking'
     msg['From'] = sender_email
     msg['To'] = receiver_email
 
