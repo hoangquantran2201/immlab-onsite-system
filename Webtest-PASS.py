@@ -32,18 +32,15 @@ if "logged_in_name" not in st.session_state:
 # ==========================================
 # KẾT NỐI GOOGLE SHEETS
 # ==========================================
-conn = st.connection("gsheets", type=GSheetsConnection)
+# Tạo 2 kết nối riêng biệt
+conn_agenda = st.connection("gsheets_agenda", type=GSheetsConnection)
+conn_accounts = st.connection("gsheets_accounts", type=GSheetsConnection)
 
-@st.cache_data(ttl=0)
-def get_data_from_sheets(sheet_name):
-    try:
-        return conn.read(worksheet=sheet_name, ttl=0)
-    except Exception as e:
-        return pd.DataFrame()
+# Đọc dữ liệu từ file Lịch trực
+df_current = conn_agenda.read(worksheet="IMMLAB ONSITE AGENDA", ttl=0)
 
-df_current = get_data_from_sheets("IMMLAB ONSITE AGENDA")
-df_accounts = get_data_from_sheets("ACCOUNTS")
-
+# Đọc dữ liệu từ file Tài khoản 
+df_accounts = conn_accounts.read(worksheet="ACCOUNTS", ttl=0)
 # ==========================================
 # HÀM GỬI EMAIL TỰ ĐỘNG
 # ==========================================
@@ -139,7 +136,7 @@ else:
                     
                     new_entry = pd.DataFrame([new_row])
                     updated_df = pd.concat([df_current, new_entry], ignore_index=True)
-                    conn.update(worksheet="IMMLAB ONSITE AGENDA", data=updated_df)
+                    conn_agenda.update(worksheet="IMMLAB ONSITE AGENDA", data=updated_df)
                     
                     st.success("Đã ghi nhận thành công!")
                     st.cache_data.clear() 
@@ -164,7 +161,7 @@ if st.session_state.is_admin:
         if not df_current.empty:
             edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
             if st.button("💾 Lưu thay đổi Lịch"):
-                conn.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
+                conn_agenda.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
                 st.success("Đã cập nhật hệ thống!")
                 st.cache_data.clear()
                 st.rerun()
@@ -174,7 +171,19 @@ if st.session_state.is_admin:
     # TAB 2: Cấp tài khoản
     with tab2:
         st.info("💡 Bấm nút dưới đây để tạo mã PIN 5 số và gửi qua Email cho những thành viên CHƯA CÓ mật khẩu trong Google Sheets.")
-        
+        # ====== BẮT ĐẦU ĐOẠN CODE TEST THÊM ======
+        st.markdown("### 🧪 Khu vực Gửi Thử Nghiệm (Test)")
+        test_email = st.text_input("Nhập email để gửi test:", value="hoangquantran2201@gmail.com")
+        if st.button("Gửi Test", type="secondary"):
+            with st.spinner("Đang gửi mail test..."):
+                test_pass = "99999" # Mã PIN giả lập để test
+                try:
+                    send_email(test_email, test_pass)
+                    st.success(f"✅ Đã gửi mail test thành công tới {test_email}! Bạn hãy kiểm tra hộp thư (cả mục Spam) nhé.")
+                except Exception as e:
+                    st.error(f"❌ Lỗi gửi mail: Kiểm tra lại App Password hoặc kết nối mạng. Chi tiết lỗi: {e}")
+        st.markdown("---")
+        # ====== KẾT THÚC ĐOẠN CODE TEST ======
         if st.button("Bắt đầu Quét & Gửi Mail", type="primary"):
             with st.spinner("Đang xử lý và gửi mail... (Vui lòng không tắt trang)"):
                 updates_made = False
@@ -195,7 +204,7 @@ if st.session_state.is_admin:
                             
                 if updates_made:
                     # Ghi đè mật khẩu mới lên tab Accounts
-                    conn.update(worksheet="ACCOUNTS", data=df_acc_updated)
+                    conn_accounts.update(worksheet="ACCOUNTS", data=df_acc_updated)
                     st.success("Hoàn tất cấp tài khoản và đồng bộ lên Google Sheets!")
                     st.cache_data.clear()
                 else:
