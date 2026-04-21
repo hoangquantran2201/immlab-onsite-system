@@ -46,8 +46,8 @@ def tao_username(ten):
 conn_agenda = st.connection("gsheets_agenda", type=GSheetsConnection)
 conn_accounts = st.connection("gsheets_accounts", type=GSheetsConnection)
 
-df_current = conn_agenda.read(worksheet="Lab Check-in Schedule", ttl=0)
-df_accounts = conn_accounts.read(worksheet="ACCOUNTS", ttl=0)
+df_current = conn_agenda.read(worksheet="Lab Check-in Schedule", ttl="10m")
+df_accounts = conn_accounts.read(worksheet="ACCOUNTS", ttl="10m")
 
 # Đảm bảo cột 'User' tồn tại trong DataFrame để tránh lỗi nếu Sheet chưa có
 if 'User' not in df_accounts.columns:
@@ -143,7 +143,7 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    if current_weekday == 0:
+    if current_weekday == 0: #0 là Thứ 2, 6 là Chủ Nhật, tùy chỉnh các ngày trong tuần
         st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
