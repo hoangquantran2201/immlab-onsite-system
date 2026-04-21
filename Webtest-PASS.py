@@ -7,7 +7,7 @@ import  smtplib
 from    email.mime.text import MIMEText
 import  unicodedata # Thư viện mới để xóa dấu tiếng Việt
 
-st.set_page_config(layout="wide", page_title="IMMLAB ONSITE AGENDA")
+st.set_page_config(layout="wide", page_title="Lab Check-in Schedule")
 
 # --- CSS ÉP BẢNG CĂN GIỮA ---
 st.markdown("""
@@ -46,7 +46,7 @@ def tao_username(ten):
 conn_agenda = st.connection("gsheets_agenda", type=GSheetsConnection)
 conn_accounts = st.connection("gsheets_accounts", type=GSheetsConnection)
 
-df_current = conn_agenda.read(worksheet="IMMLAB ONSITE AGENDA", ttl=0)
+df_current = conn_agenda.read(worksheet="Lab Check-in Schedule", ttl=0)
 df_accounts = conn_accounts.read(worksheet="ACCOUNTS", ttl=0)
 
 # Đảm bảo cột 'User' tồn tại trong DataFrame để tránh lỗi nếu Sheet chưa có
@@ -184,7 +184,7 @@ if st.session_state.is_admin:
         if not df_current.empty:
             edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
             if st.button("💾 Lưu thay đổi Lịch"):
-                conn_agenda.update(worksheet="IMMLAB ONSITE AGENDA", data=edited_df)
+                conn_agenda.update(worksheet="Lab Check-in Schedule", data=edited_df)
                 st.success("Đã cập nhật hệ thống!")
                 st.cache_data.clear()
                 st.rerun()
