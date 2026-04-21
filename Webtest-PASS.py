@@ -18,7 +18,7 @@ st.markdown("""
         background-color: #1E2530 !important; 
         color: #FFFFFF !important;
     }
-    </style>P
+    </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -108,10 +108,19 @@ if st.session_state.logged_in_name is None:
                 st.rerun()
             else:
                 if not df_accounts.empty:
-                    # Lọc tìm người dùng: Cho phép khớp với cột Email HOẶC cột User
+                    # 1. Làm sạch dữ liệu đầu vào (xóa khoảng trắng thừa, in thường)
+                    input_user_clean = email_input.strip().lower()
+                    input_pass_clean = pass_input.strip()
+
+                    # 2. Làm sạch dữ liệu từ Sheets (cắt đuôi .0 của số, xóa khoảng trắng)
+                    sheet_passwords = df_accounts['Password'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                    sheet_users = df_accounts['User'].astype(str).str.strip().str.lower()
+                    sheet_emails = df_accounts['Email'].astype(str).str.strip().str.lower()
+
+                    # 3. Lọc tìm người dùng với dữ liệu đã được chuẩn hóa
                     user_match = df_accounts[
-                        ((df_accounts['Email'] == email_input) | (df_accounts['User'] == email_input)) & 
-                        (df_accounts['Password'].astype(str) == pass_input)
+                        ((sheet_emails == input_user_clean) | (sheet_users == input_user_clean)) & 
+                        (sheet_passwords == input_pass_clean)
                     ]
                     
                     if not user_match.empty:
