@@ -18,7 +18,7 @@ st.markdown("""
         background-color: #1E2530 !important; 
         color: #FFFFFF !important;
     }
-    </style>
+    </style>P
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -210,6 +210,10 @@ if st.session_state.is_admin:
                 updates_made = False
                 df_acc_updated = df_accounts.copy()
                 
+                df_acc_updated['User'] = df_acc_updated['User'].astype(object)
+                df_acc_updated['Password'] = df_acc_updated['Password'].astype(object)
+                df_acc_updated['Status'] = df_acc_updated['Status'].astype(object)
+
                 # Lấy danh sách pass cũ để chống trùng
                 existing_passwords = df_acc_updated['Password'].dropna().astype(str).tolist()
                 
