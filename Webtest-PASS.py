@@ -143,7 +143,7 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    if current_weekday == 0: #0 là Thứ 2, 6 là Chủ Nhật, tùy chỉnh các ngày trong tuần
+    if current_weekday == 6: #0 là Thứ 2, 6 là Chủ Nhật, tùy chỉnh các ngày trong tuần
         st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
