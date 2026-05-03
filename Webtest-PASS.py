@@ -170,7 +170,7 @@ else:
                     
                     new_entry = pd.DataFrame([new_row])
                     updated_df = pd.concat([df_current, new_entry], ignore_index=True)
-                    conn_agenda.update(worksheet="IMMLAB ONSITE AGENDA", data=updated_df)
+                    conn_agenda.update(worksheet="Lab Check-in Schedule", data=updated_df)
                     
                     st.success("Đã ghi nhận thành công!")
                     st.cache_data.clear() 
