@@ -101,23 +101,24 @@ if st.session_state.logged_in_name is None:
             pass_input = st.text_input("Mật khẩu:", type="password")
         
         if st.button("Đăng nhập"):
-            if email_input == "admin@immlab.com" and pass_input == "immlabstaff":
+            # 1. Gọt giũa dữ liệu ngay từ đầu cho CẢ ADMIN VÀ USER
+            input_user_clean = email_input.strip().lower()
+            input_pass_clean = pass_input.strip()
+
+            # 2. Xử lý Admin
+            if input_user_clean == "admin@immlab.com" and input_pass_clean == "immlabstaff":
                 st.session_state.logged_in_name = "Staff"
                 st.session_state.is_admin = True
                 st.success("Đăng nhập Admin thành công!")
                 st.rerun()
             else:
+                # 3. Xử lý User thường
                 if not df_accounts.empty:
-                    # 1. Làm sạch dữ liệu đầu vào (xóa khoảng trắng thừa, in thường)
-                    input_user_clean = email_input.strip().lower()
-                    input_pass_clean = pass_input.strip()
-
-                    # 2. Làm sạch dữ liệu từ Sheets (cắt đuôi .0 của số, xóa khoảng trắng)
-                    sheet_passwords = df_accounts['Password'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                    sheet_passwords = df_accounts['Password'].astype(str).str.replace(r'\.0$', '', regex=True).str.replace(',', '', regex=False).str.strip()
                     sheet_users = df_accounts['User'].astype(str).str.strip().str.lower()
                     sheet_emails = df_accounts['Email'].astype(str).str.strip().str.lower()
 
-                    # 3. Lọc tìm người dùng với dữ liệu đã được chuẩn hóa
+                    # So khớp
                     user_match = df_accounts[
                         ((sheet_emails == input_user_clean) | (sheet_users == input_user_clean)) & 
                         (sheet_passwords == input_pass_clean)
