@@ -107,7 +107,7 @@ if st.session_state.logged_in_name is None:
             input_pass_clean = pass_input.strip()
 
             # 2. Xử lý Admin
-            if input_user_clean == "admin@immlab.com" and input_pass_clean == "immlabstaff":
+            if input_user_clean == "immlabstaff" and input_pass_clean == "immlabstaff":
                 st.session_state.logged_in_name = "Staff"
                 st.session_state.is_admin = True
                 st.success("Đăng nhập Admin thành công!")
