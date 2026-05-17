@@ -5,7 +5,8 @@ from    streamlit_gsheets import GSheetsConnection
 import  random
 import  smtplib
 from    email.mime.text import MIMEText
-import  unicodedata # Thư viện mới để xóa dấu tiếng Việt
+import  unicodedata # Thư viện xóa dấu tiếng Việt
+import  time # Thư viện điều khiển thời gian chờ
 
 st.set_page_config(layout="wide", page_title="Lab Check-in Schedule")
 
@@ -144,7 +145,7 @@ else:
             st.session_state.is_admin = False
             st.rerun()
 
-    if current_weekday == 6: #0 là Thứ 2, 6 là Chủ Nhật, tùy chỉnh các ngày trong tuần
+    if current_weekday in [0, 6]: #0 là Thứ 2, 6 là Chủ Nhật, tùy chỉnh các ngày trong tuần
         st.info("Cổng đăng ký hiện đang MỞ: Mời bạn đăng ký")
         with st.form("registration_form"):
             current_user = st.session_state.logged_in_name
@@ -175,9 +176,10 @@ else:
                     
                     st.success("Đã ghi nhận thành công!")
                     st.cache_data.clear() 
+                    time.sleep(2)
                     st.rerun()
     else:
-        st.warning("Cổng đăng ký hiện đang ĐÓNG. Bạn chỉ có thể đăng ký vào Chủ Nhật hàng tuần.")
+        st.warning("Cổng đăng ký hiện đang ĐÓNG. Bạn chỉ có thể đăng ký vào Chủ Nhật và Thứ 2 hàng tuần.")
 
 st.markdown("---")
 
