@@ -162,9 +162,12 @@ else:
                     st.error("Vui lòng chọn ít nhất một ngày!")
                 else:
                     timestamp = now.strftime("%d/%m %H:%M")
-                    next_monday = now + timedelta(days=1)
-                    next_sunday = now + timedelta(days=7)
-                    week_str = f"{next_monday.strftime('%d/%m')} - {next_sunday.strftime('%d/%m')}"
+                    if current_weekday == 6: 
+                        target_monday = now + timedelta(days=1)
+                    else: 
+                        target_monday = now - timedelta(days=current_weekday)
+                    target_sunday = target_monday + timedelta(days=6)
+                    week_str = f"{target_monday.strftime('%d/%m')} - {target_sunday.strftime('%d/%m')}"
                     
                     new_row = {"Dấu thời gian": timestamp, "Tuần đăng ký": week_str}
                     for day in DAYS:
