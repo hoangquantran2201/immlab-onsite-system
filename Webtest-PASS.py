@@ -301,8 +301,8 @@ if st.session_state.is_admin:
         if not df_accounts.empty:
             st.dataframe(df_accounts, use_container_width=True, hide_index=True)
 
-        with tab3:
-            st.info("📊 Bảng thống kê KPI: Đếm số ngày CÓ MẶT THỰC TẾ và theo dõi số lần VẮNG MẶT.")
+    with tab3:
+        st.info("📊 Bảng thống kê KPI: Đếm số ngày CÓ MẶT THỰC TẾ và theo dõi số lần VẮNG MẶT.")
         
         if not df_current.empty:
             try:
