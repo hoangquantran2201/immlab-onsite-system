@@ -192,8 +192,7 @@ st.markdown("---")
 if st.session_state.is_admin:
     st.subheader("⚙️ Khu vực Quản Trị Viên")
     
-    tab1, tab2 = st.tabs(["Quản lý Lịch Onsite", "Cấp Pass & Gửi Mail"])
-    
+    tab1, tab2, tab3 = st.tabs(["Quản lý Lịch Onsite", "Cấp Pass & Gửi Mail", "Thống kê Lab"])
     with tab1:
         st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
         if not df_current.empty:
@@ -271,3 +270,44 @@ if st.session_state.is_admin:
         st.write("Bảng theo dõi trạng thái tài khoản (Đồng bộ từ Tab Accounts):")
         if not df_accounts.empty:
             st.dataframe(df_accounts, use_container_width=True, hide_index=True)
+
+    with tab3:
+        st.info("📊 Bảng thống kê tổng số ngày đăng ký có mặt tại Lab của từng thành viên theo tháng.")
+        
+        if not df_current.empty:
+            try:
+                # 1. Biến đổi bảng: Gom tất cả các cột Thứ (Thứ 2 -> Chủ Nhật) thành 1 cột "Thứ" duy nhất
+                df_melted = df_current.melt(
+                    id_vars=['Dấu thời gian', 'Tuần đăng ký'], 
+                    value_vars=DAYS, 
+                    var_name='Thứ', 
+                    value_name='Thành viên'
+                )
+                
+                # 2. Lọc bỏ các ô trống (những ngày không có ai đăng ký)
+                df_valid = df_melted[(df_melted['Thành viên'].notna()) & (df_melted['Thành viên'].str.strip() != "")].copy()
+                
+                if not df_valid.empty:
+                    # 3. Trích xuất Tháng từ cột 'Tuần đăng ký' (Lấy tháng của ngày đầu tuần)
+                    # Ví dụ: "25/08 - 31/08" -> Trích xuất số "08"
+                    df_valid['Tháng'] = df_valid['Tuần đăng ký'].astype(str).str.extract(r'/(\d{2})\s*-')
+                    df_valid['Tháng'] = "Tháng " + df_valid['Tháng'].fillna("Khác")
+                    
+                    # 4. Đếm số ngày đăng ký của từng thành viên theo từng tháng
+                    df_stats = df_valid.groupby(['Thành viên', 'Tháng']).size().reset_index(name='Số ngày')
+                    
+                    # 5. Xoay bảng lại để hiển thị: Cột là Tháng, Hàng là Tên thành viên
+                    df_pivot = df_stats.pivot(index='Thành viên', columns='Tháng', values='Số ngày').fillna(0).astype(int)
+                    
+                    # 6. Thêm cột Tổng cộng và sắp xếp thứ hạng giảm dần
+                    df_pivot['Tổng cộng'] = df_pivot.sum(axis=1)
+                    df_pivot = df_pivot.sort_values(by='Tổng cộng', ascending=False)
+                    
+                    # Hiển thị bảng ra màn hình cho Admin
+                    st.dataframe(df_pivot, use_container_width=True)
+                else:
+                    st.write("Hiện chưa có dữ liệu thành viên đăng ký lịch.")
+            except Exception as e:
+                st.error(f"❌ Có lỗi xảy ra khi tính toán thống kê: {e}")
+        else:
+            st.write("Chưa có dữ liệu lịch trên Google Sheets để thống kê.")       
