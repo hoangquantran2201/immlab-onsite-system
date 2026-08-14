@@ -194,14 +194,44 @@ if st.session_state.is_admin:
     
     tab1, tab2, tab3 = st.tabs(["Quản lý Lịch Onsite", "Cấp Pass & Gửi Mail", "Thống kê Lab"])
     with tab1:
-        st.info("💡 Bạn có thể sửa trực tiếp vào bảng dưới đây. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
-        if not df_current.empty:
-            edited_df = st.data_editor(df_current, num_rows="dynamic", use_container_width=True, hide_index=True)
-            if st.button("💾 Lưu thay đổi Lịch"):
-                conn_agenda.update(worksheet="Lab Check-in Schedule", data=edited_df)
-                st.success("Đã cập nhật hệ thống!")
-                st.cache_data.clear()
-                st.rerun()
+        st.info("💡 Chế độ xem theo tuần: Chọn tuần cần xem và sửa. Nhấn 'Lưu' để đồng bộ lên Google Sheets.")
+        
+        # Kiểm tra xem bảng có dữ liệu và có cột "Tuần đăng ký" chưa
+        if not df_current.empty and 'Tuần đăng ký' in df_current.columns:
+            
+            # Lấy danh sách các tuần (loại bỏ ô trống và các tuần trùng lặp)
+            danh_sach_tuan = df_current['Tuần đăng ký'].dropna().unique().tolist()
+            
+            if danh_sach_tuan:
+                # Tạo thanh menu chọn tuần (mặc định chọn tuần mới nhất - nằm cuối danh sách)
+                selected_week = st.selectbox("📅 Chọn tuần để xem:", danh_sach_tuan, index=len(danh_sach_tuan)-1)
+                
+                # Lọc bảng chỉ hiển thị dữ liệu của tuần vừa chọn
+                df_filtered = df_current[df_current['Tuần đăng ký'] == selected_week]
+                
+                # Hiển thị bảng cho phép chỉnh sửa
+                edited_df = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, hide_index=True)
+                
+                if st.button("💾 Lưu thay đổi Lịch"):
+                    with st.spinner("Đang lưu dữ liệu..."):
+                        # 1. Tách riêng dữ liệu của tất cả các tuần KHÁC cất đi
+                        df_other_weeks = df_current[df_current['Tuần đăng ký'] != selected_week]
+                        
+                        # 2. Đảm bảo nếu Admin bấm (+) thêm dòng mới, nó vẫn tự nhảy đúng vào tuần này
+                        edited_df['Tuần đăng ký'] = selected_week
+                        
+                        # 3. Ráp nối lại: Dữ liệu các tuần cũ + Dữ liệu tuần này vừa sửa
+                        df_final = pd.concat([df_other_weeks, edited_df], ignore_index=True)
+                        
+                        # 4. Đẩy toàn bộ bảng mới lên Google Sheets
+                        conn_agenda.update(worksheet="Lab Check-in Schedule", data=df_final)
+                        
+                        st.success(f"✅ Đã cập nhật thành công lịch cho {selected_week}! Hệ thống đang làm mới...")
+                        st.cache_data.clear()
+                        time.sleep(1.5)
+                        st.rerun()
+            else:
+                st.write("Chưa có thông tin tuần nào được đăng ký.")
         else:
             st.write("Chưa có dữ liệu lịch.")
             
@@ -271,12 +301,12 @@ if st.session_state.is_admin:
         if not df_accounts.empty:
             st.dataframe(df_accounts, use_container_width=True, hide_index=True)
 
-    with tab3:
-        st.info("📊 Bảng thống kê tổng số ngày đăng ký có mặt tại Lab của từng thành viên theo tháng.")
+        with tab3:
+            st.info("📊 Bảng thống kê KPI: Đếm số ngày CÓ MẶT THỰC TẾ và theo dõi số lần VẮNG MẶT.")
         
         if not df_current.empty:
             try:
-                # 1. Biến đổi bảng: Gom tất cả các cột Thứ (Thứ 2 -> Chủ Nhật) thành 1 cột "Thứ" duy nhất
+                # 1. Gom cột Thứ 2 -> Chủ Nhật thành 1 cột dọc
                 df_melted = df_current.melt(
                     id_vars=['Dấu thời gian', 'Tuần đăng ký'], 
                     value_vars=DAYS, 
@@ -284,30 +314,53 @@ if st.session_state.is_admin:
                     value_name='Thành viên'
                 )
                 
-                # 2. Lọc bỏ các ô trống (những ngày không có ai đăng ký)
+                # 2. Lọc bỏ ô trống
                 df_valid = df_melted[(df_melted['Thành viên'].notna()) & (df_melted['Thành viên'].str.strip() != "")].copy()
                 
                 if not df_valid.empty:
-                    # 3. Trích xuất Tháng từ cột 'Tuần đăng ký' (Lấy tháng của ngày đầu tuần)
-                    # Ví dụ: "25/08 - 31/08" -> Trích xuất số "08"
+                    # Trích xuất Tháng
                     df_valid['Tháng'] = df_valid['Tuần đăng ký'].astype(str).str.extract(r'/(\d{2})\s*-')
                     df_valid['Tháng'] = "Tháng " + df_valid['Tháng'].fillna("Khác")
                     
-                    # 4. Đếm số ngày đăng ký của từng thành viên theo từng tháng
-                    df_stats = df_valid.groupby(['Thành viên', 'Tháng']).size().reset_index(name='Số ngày')
+                    # ==========================================
+                    # THUẬT TOÁN XỬ LÝ VẮNG MẶT
+                    # ==========================================
+                    # Nhận diện ai có chữ "vắng" trong tên (bất kể viết hoa/thường hay có dấu ngoặc)
+                    is_absent = df_valid['Thành viên'].str.lower().str.contains('vắng')
                     
-                    # 5. Xoay bảng lại để hiển thị: Cột là Tháng, Hàng là Tên thành viên
-                    df_pivot = df_stats.pivot(index='Thành viên', columns='Tháng', values='Số ngày').fillna(0).astype(int)
+                    # Dọn dẹp tên (Cắt bỏ đoạn "(vắng)" để gộp chung vào tên gốc)
+                    # Biểu thức (?i) giúp không phân biệt hoa thường
+                    df_valid['Tên chuẩn'] = df_valid['Thành viên'].str.replace(r'(?i)[-_\(\)\[\]\s]*vắng.*', '', regex=True).str.strip()
                     
-                    # 6. Thêm cột Tổng cộng và sắp xếp thứ hạng giảm dần
-                    df_pivot['Tổng cộng'] = df_pivot.sum(axis=1)
-                    df_pivot = df_pivot.sort_values(by='Tổng cộng', ascending=False)
+                    # Chia làm 2 nhóm dữ liệu: Đi thực tế và Vắng mặt
+                    df_present = df_valid[~is_absent]
+                    df_absent = df_valid[is_absent]
                     
-                    # Hiển thị bảng ra màn hình cho Admin
+                    # Tính toán: SỐ NGÀY ĐI THỰC TẾ
+                    if not df_present.empty:
+                        df_stats = df_present.groupby(['Tên chuẩn', 'Tháng']).size().reset_index(name='Số ngày')
+                        df_pivot = df_stats.pivot(index='Tên chuẩn', columns='Tháng', values='Số ngày').fillna(0).astype(int)
+                        df_pivot['Tổng có mặt'] = df_pivot.sum(axis=1)
+                    else:
+                        df_pivot = pd.DataFrame(columns=['Tổng có mặt'])
+                        
+                    # Tính toán: SỐ LẦN VẮNG MẶT (Để cảnh cáo)
+                    if not df_absent.empty:
+                        absent_counts = df_absent.groupby('Tên chuẩn').size()
+                        # Ghép cột Vắng mặt vào bảng chính
+                        df_pivot = df_pivot.join(absent_counts.rename('Tổng số lần Vắng')).fillna(0)
+                        df_pivot['Tổng số lần Vắng'] = df_pivot['Tổng số lần Vắng'].astype(int)
+                    else:
+                        df_pivot['Tổng số lần Vắng'] = 0
+                        
+                    # Sắp xếp theo chuyên cần 
+                    df_pivot = df_pivot.sort_values(by='Tổng có mặt', ascending=False)
+                    
+                    # Xuất bảng báo cáo ra màn hình
                     st.dataframe(df_pivot, use_container_width=True)
                 else:
                     st.write("Hiện chưa có dữ liệu thành viên đăng ký lịch.")
             except Exception as e:
                 st.error(f"❌ Có lỗi xảy ra khi tính toán thống kê: {e}")
         else:
-            st.write("Chưa có dữ liệu lịch trên Google Sheets để thống kê.")       
+            st.write("Chưa có dữ liệu lịch trên Google Sheets để thống kê.")
