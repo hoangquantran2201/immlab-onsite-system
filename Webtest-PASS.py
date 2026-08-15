@@ -302,7 +302,7 @@ if st.session_state.is_admin:
             st.dataframe(df_accounts, use_container_width=True, hide_index=True)
 
     with tab3:
-        st.info("📊 Bảng thống kê KPI: Đếm số ngày CÓ MẶT THỰC TẾ và theo dõi số lần VẮNG MẶT.")
+        st.info("📊 Bảng thống kê: Theo dõi số ngày CÓ MẶT THỰC TẾ và số lần VẮNG MẶT.")
         
         if not df_current.empty:
             try:
@@ -338,15 +338,15 @@ if st.session_state.is_admin:
                     
                     # Tính toán: SỐ NGÀY ĐI THỰC TẾ
                     if not df_present.empty:
-                        df_stats = df_present.groupby(['Tên chuẩn', 'Tháng']).size().reset_index(name='Số ngày')
-                        df_pivot = df_stats.pivot(index='Tên chuẩn', columns='Tháng', values='Số ngày').fillna(0).astype(int)
+                        df_stats = df_present.groupby(['Tên', 'Tháng']).size().reset_index(name='Số ngày')
+                        df_pivot = df_stats.pivot(index='Tên', columns='Tháng', values='Số ngày').fillna(0).astype(int)
                         df_pivot['Tổng có mặt'] = df_pivot.sum(axis=1)
                     else:
                         df_pivot = pd.DataFrame(columns=['Tổng có mặt'])
                         
                     # Tính toán: SỐ LẦN VẮNG MẶT (Để cảnh cáo)
                     if not df_absent.empty:
-                        absent_counts = df_absent.groupby('Tên chuẩn').size()
+                        absent_counts = df_absent.groupby('Tên').size()
                         # Ghép cột Vắng mặt vào bảng chính
                         df_pivot = df_pivot.join(absent_counts.rename('Tổng số lần Vắng')).fillna(0)
                         df_pivot['Tổng số lần Vắng'] = df_pivot['Tổng số lần Vắng'].astype(int)
