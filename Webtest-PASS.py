@@ -302,9 +302,9 @@ if st.session_state.is_admin:
             st.dataframe(df_accounts, use_container_width=True, hide_index=True)
 
     with tab3:
-        st.info("📊 Bảng thống kê: Theo dõi số ngày CÓ MẶT THỰC TẾ và số lần VẮNG MẶT.")
+        st.info("📊 Thống kê:  Theo dõi số ngày CÓ MẶT THỰC TẾ và số lần VẮNG MẶT")
         
-        if not df_current.empty:
+        if not df_current.empty and 'Tuần đăng ký' in df_current.columns:
             try:
                 # 1. Gom cột Thứ 2 -> Chủ Nhật thành 1 cột dọc
                 df_melted = df_current.melt(
@@ -318,46 +318,53 @@ if st.session_state.is_admin:
                 df_valid = df_melted[(df_melted['Thành viên'].notna()) & (df_melted['Thành viên'].str.strip() != "")].copy()
                 
                 if not df_valid.empty:
-                    # Trích xuất Tháng
+                    # 3. Trích xuất Tháng để làm bộ lọc
                     df_valid['Tháng'] = df_valid['Tuần đăng ký'].astype(str).str.extract(r'/(\d{2})\s*-')
                     df_valid['Tháng'] = "Tháng " + df_valid['Tháng'].fillna("Khác")
                     
-                    # ==========================================
-                    # THUẬT TOÁN XỬ LÝ VẮNG MẶT
-                    # ==========================================
-                    # Nhận diện ai có chữ "vắng" trong tên (bất kể viết hoa/thường hay có dấu ngoặc)
-                    is_absent = df_valid['Thành viên'].str.lower().str.contains('vắng')
+                    # 4. Tạo menu chọn Tháng
+                    danh_sach_thang = sorted(df_valid['Tháng'].unique().tolist())
                     
-                    # Dọn dẹp tên (Cắt bỏ đoạn "(vắng)" để gộp chung vào tên gốc)
-                    # Biểu thức (?i) giúp không phân biệt hoa thường
-                    df_valid['Tên'] = df_valid['Thành viên'].str.replace(r'(?i)[-_\(\)\[\]\s]*vắng.*', '', regex=True).str.strip()
-                    
-                    # Chia làm 2 nhóm dữ liệu: Đi thực tế và Vắng mặt
-                    df_present = df_valid[~is_absent]
-                    df_absent = df_valid[is_absent]
-                    
-                    # Tính toán: SỐ NGÀY ĐI THỰC TẾ
-                    if not df_present.empty:
-                        df_stats = df_present.groupby(['Tên', 'Tháng']).size().reset_index(name='Số ngày')
-                        df_pivot = df_stats.pivot(index='Tên', columns='Tháng', values='Số ngày').fillna(0).astype(int)
-                        df_pivot['Tổng có mặt'] = df_pivot.sum(axis=1)
-                    else:
-                        df_pivot = pd.DataFrame(columns=['Tổng có mặt'])
+                    if danh_sach_thang:
+                        selected_month = st.selectbox("🗓️ Chọn tháng để xem thống kê:", danh_sach_thang)
                         
-                    # Tính toán: SỐ LẦN VẮNG MẶT (Để cảnh cáo)
-                    if not df_absent.empty:
-                        absent_counts = df_absent.groupby('Tên').size()
-                        # Ghép cột Vắng mặt vào bảng chính
-                        df_pivot = df_pivot.join(absent_counts.rename('Tổng số lần Vắng')).fillna(0)
-                        df_pivot['Tổng số lần Vắng'] = df_pivot['Tổng số lần Vắng'].astype(int)
-                    else:
-                        df_pivot['Tổng số lần Vắng'] = 0
+                        # 5. Lọc bảng chỉ lấy dữ liệu của Tháng đã chọn
+                        df_month = df_valid[df_valid['Tháng'] == selected_month].copy()
                         
-                    # Sắp xếp theo chuyên cần 
-                    df_pivot = df_pivot.sort_values(by='Tổng có mặt', ascending=False)
-                    
-                    # Xuất bảng báo cáo ra màn hình
-                    st.dataframe(df_pivot, use_container_width=True)
+                        # ==========================================
+                        # THUẬT TOÁN XỬ LÝ VẮNG MẶT VÀ TÍNH TOÁN THEO TUẦN
+                        # ==========================================
+                        is_absent = df_month['Thành viên'].str.lower().str.contains('vắng')
+                        df_month['Tên'] = df_month['Thành viên'].str.replace(r'(?i)[-_\(\)\[\]\s]*vắng.*', '', regex=True).str.strip()
+                        
+                        df_present = df_month[~is_absent]
+                        df_absent = df_month[is_absent]
+                        
+                        # Tính số ngày CÓ MẶT theo từng TUẦN
+                        if not df_present.empty:
+                            # Groupby theo Tên và Tuần đăng ký
+                            df_stats = df_present.groupby(['Tên', 'Tuần đăng ký']).size().reset_index(name='Số ngày')
+                            # Xoay bảng: Cột là Tuần, Hàng là Tên
+                            df_pivot = df_stats.pivot(index='Tên', columns='Tuần đăng ký', values='Số ngày').fillna(0).astype(int)
+                            df_pivot['Tổng có mặt (Tháng này)'] = df_pivot.sum(axis=1)
+                        else:
+                            df_pivot = pd.DataFrame(columns=['Tổng có mặt (Tháng này)'])
+                            
+                        # Tính SỐ LẦN VẮNG MẶT trong tháng đó
+                        if not df_absent.empty:
+                            absent_counts = df_absent.groupby('Tên').size()
+                            df_pivot = df_pivot.join(absent_counts.rename('Tổng Vắng (Tháng này)')).fillna(0)
+                            df_pivot['Tổng Vắng (Tháng này)'] = df_pivot['Tổng Vắng (Tháng này)'].astype(int)
+                        else:
+                            df_pivot['Tổng Vắng (Tháng này)'] = 0
+                            
+                        # Sắp xếp thành viên đi nhiều lên top
+                        df_pivot = df_pivot.sort_values(by='Tổng có mặt (Tháng này)', ascending=False)
+                        
+                        # Xuất bảng ra màn hình
+                        st.dataframe(df_pivot, use_container_width=True)
+                    else:
+                        st.write("Không tìm thấy dữ liệu tháng hợp lệ.")
                 else:
                     st.write("Hiện chưa có dữ liệu thành viên đăng ký lịch.")
             except Exception as e:
