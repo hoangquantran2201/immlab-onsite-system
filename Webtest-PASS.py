@@ -330,7 +330,7 @@ if st.session_state.is_admin:
                     
                     # Dọn dẹp tên (Cắt bỏ đoạn "(vắng)" để gộp chung vào tên gốc)
                     # Biểu thức (?i) giúp không phân biệt hoa thường
-                    df_valid['Tên chuẩn'] = df_valid['Thành viên'].str.replace(r'(?i)[-_\(\)\[\]\s]*vắng.*', '', regex=True).str.strip()
+                    df_valid['Tên'] = df_valid['Thành viên'].str.replace(r'(?i)[-_\(\)\[\]\s]*vắng.*', '', regex=True).str.strip()
                     
                     # Chia làm 2 nhóm dữ liệu: Đi thực tế và Vắng mặt
                     df_present = df_valid[~is_absent]
